@@ -173,17 +173,26 @@ class DatabaseManager {
   }
 
   public verifyAdmin(username: string, passwordAttempt: string): boolean {
-    if (!this.isConfigured()) return false;
-    if (this.data.admin.username !== username.trim()) {
+    try {
+      if (!this.isConfigured()) return false;
+      if (!username || !passwordAttempt) return false;
+      if (this.data.admin.username.trim().toLowerCase() !== username.trim().toLowerCase()) {
+        return false;
+      }
+      if (!this.data.admin.salt || !this.data.admin.passwordHash) {
+        return false;
+      }
+      const attemptHash = hashPassword(passwordAttempt, this.data.admin.salt);
+      const validHashBuf = Buffer.from(this.data.admin.passwordHash, 'hex');
+      const attemptHashBuf = Buffer.from(attemptHash, 'hex');
+      if (validHashBuf.length !== attemptHashBuf.length) {
+        return false;
+      }
+      return crypto.timingSafeEqual(validHashBuf, attemptHashBuf);
+    } catch (err) {
+      console.error('Admin authentication verification error:', err);
       return false;
     }
-    const attemptHash = hashPassword(passwordAttempt, this.data.admin.salt);
-    const validHashBuf = Buffer.from(this.data.admin.passwordHash, 'hex');
-    const attemptHashBuf = Buffer.from(attemptHash, 'hex');
-    if (validHashBuf.length !== attemptHashBuf.length) {
-      return false;
-    }
-    return crypto.timingSafeEqual(validHashBuf, attemptHashBuf);
   }
 
   public createSession(username: string): string {
@@ -323,107 +332,203 @@ async function startServer() {
 
   // --- Auth Endpoints ---
 
+  const authSetupStatusPaths = [
+    '/api/auth/setup-status',
+    '/api/admin/setup-status',
+    '/api/setup-status'
+  ];
+
+  const authSetupPaths = [
+    '/api/auth/setup',
+    '/api/admin/setup',
+    '/api/setup'
+  ];
+
+  const authLoginPaths = [
+    '/api/auth/login',
+    '/api/admin/login',
+    '/api/login',
+    '/admin/login'
+  ];
+
+  const authMePaths = [
+    '/api/auth/me',
+    '/api/admin/me',
+    '/api/me'
+  ];
+
+  const authLogoutPaths = [
+    '/api/auth/logout',
+    '/api/admin/logout',
+    '/api/logout'
+  ];
+
+  const authChangeCredsPaths = [
+    '/api/auth/change-credentials',
+    '/api/admin/change-credentials',
+    '/api/change-credentials'
+  ];
+
   // Check whether administrator account is initialized
-  app.get('/api/auth/setup-status', (_req: Request, res: Response) => {
-    res.json({
-      isConfigured: db.isConfigured()
-    });
+  app.get(authSetupStatusPaths, (_req: Request, res: Response) => {
+    try {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.json({
+        success: true,
+        isConfigured: db.isConfigured()
+      });
+    } catch (err: any) {
+      res.status(500).setHeader('Content-Type', 'application/json; charset=utf-8').json({
+        success: false,
+        error: 'خطأ في فحص حالة إعداد المسؤول'
+      });
+    }
   });
 
   // First-time administrator creation
-  app.post('/api/auth/setup', (req: Request, res: Response) => {
-    if (db.isConfigured()) {
-      res.status(400).json({ error: 'تم إعداد حساب المسؤول مسبقاً، يرجى تسجيل الدخول' });
-      return;
-    }
+  app.post(authSetupPaths, (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    try {
+      if (db.isConfigured()) {
+        res.status(400).json({ success: false, error: 'تم إعداد حساب المسؤول مسبقاً، يرجى تسجيل الدخول' });
+        return;
+      }
 
-    const { username, password } = req.body;
-    if (!username || typeof username !== 'string' || username.trim().length < 3) {
-      res.status(400).json({ error: 'يجب أن لا يقل اسم المستخدم عن 3 أحرف' });
-      return;
-    }
-    if (!password || typeof password !== 'string' || password.length < 6) {
-      res.status(400).json({ error: 'يجب أن لا تقل كلمة المرور عن 6 أحرف أو أرقام' });
-      return;
-    }
+      const body = req.body || {};
+      const username = typeof body.username === 'string' ? body.username.trim() : '';
+      const password = typeof body.password === 'string' ? body.password : '';
 
-    db.setupAdmin(username.trim(), password);
-    const token = db.createSession(username.trim());
+      if (!username || username.length < 3) {
+        res.status(400).json({ success: false, error: 'يجب أن لا يقل اسم المستخدم عن 3 أحرف' });
+        return;
+      }
+      if (!password || password.length < 6) {
+        res.status(400).json({ success: false, error: 'يجب أن لا تقل كلمة المرور عن 6 أحرف أو أرقام' });
+        return;
+      }
 
-    res.json({
-      success: true,
-      token,
-      admin: db.getAdminInfo(),
-      message: 'تم إنشاء بيانات المسؤول بنجاح والدخول إلى لوحة التحكم'
-    });
-  });
+      db.setupAdmin(username, password);
+      const token = db.createSession(username);
 
-  app.post('/api/auth/login', (req: Request, res: Response) => {
-    if (!db.isConfigured()) {
-      res.status(400).json({ needsSetup: true, error: 'الموقع يحتاج إلى إعداد حساب المسؤول لأول مرة' });
-      return;
-    }
-
-    const { username, password } = req.body;
-    if (!username || !password) {
-      res.status(400).json({ error: 'اسم المستخدم وكلمة المرور مطلوبان' });
-      return;
-    }
-
-    if (!db.verifyAdmin(username, password)) {
-      res.status(401).json({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
-      return;
-    }
-
-    const token = db.createSession(username.trim());
-    res.json({
-      success: true,
-      token,
-      admin: db.getAdminInfo(),
-      message: 'تم تسجيل الدخول بنجاح'
-    });
-  });
-
-  app.get('/api/auth/me', (req: Request, res: Response) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.json({ authenticated: false, isConfigured: db.isConfigured() });
-      return;
-    }
-    const token = authHeader.split(' ')[1];
-    const isValid = db.validateSession(token);
-    if (isValid) {
-      res.json({ authenticated: true, admin: db.getAdminInfo(), isConfigured: db.isConfigured() });
-    } else {
-      res.json({ authenticated: false, isConfigured: db.isConfigured() });
+      res.status(200).json({
+        success: true,
+        token,
+        admin: db.getAdminInfo(),
+        message: 'تم إنشاء بيانات المسؤول بنجاح والدخول إلى لوحة التحكم'
+      });
+    } catch (err: any) {
+      console.error('Setup endpoint error:', err);
+      res.status(500).json({
+        success: false,
+        error: err?.message || 'فشل إعداد حساب المسؤول بسبب خطأ في الخادم'
+      });
     }
   });
 
-  app.post('/api/auth/logout', (req: Request, res: Response) => {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+  // Admin login endpoint
+  app.post(authLoginPaths, (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    try {
+      if (!db.isConfigured()) {
+        res.status(400).json({
+          success: false,
+          needsSetup: true,
+          error: 'الموقع يحتاج إلى إعداد حساب المسؤول لأول مرة'
+        });
+        return;
+      }
+
+      const body = req.body || {};
+      const username = typeof body.username === 'string' ? body.username.trim() : '';
+      const password = typeof body.password === 'string' ? body.password : '';
+
+      if (!username || !password) {
+        res.status(400).json({
+          success: false,
+          error: 'اسم المستخدم وكلمة المرور مطلوبان'
+        });
+        return;
+      }
+
+      if (!db.verifyAdmin(username, password)) {
+        res.status(401).json({
+          success: false,
+          error: 'اسم المستخدم أو كلمة المرور غير صحيحة'
+        });
+        return;
+      }
+
+      const token = db.createSession(username);
+      res.status(200).json({
+        success: true,
+        token,
+        admin: db.getAdminInfo(),
+        message: 'تم تسجيل الدخول بنجاح'
+      });
+    } catch (err: any) {
+      console.error('Login endpoint error:', err);
+      res.status(500).json({
+        success: false,
+        error: err?.message || 'فشل تسجيل الدخول بسبب خطأ في الخادم'
+      });
+    }
+  });
+
+  app.get(authMePaths, (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        res.json({ authenticated: false, isConfigured: db.isConfigured() });
+        return;
+      }
       const token = authHeader.split(' ')[1];
-      db.invalidateSession(token);
+      const isValid = db.validateSession(token);
+      if (isValid) {
+        res.json({ success: true, authenticated: true, admin: db.getAdminInfo(), isConfigured: db.isConfigured() });
+      } else {
+        res.json({ success: true, authenticated: false, isConfigured: db.isConfigured() });
+      }
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: 'خطأ في التحقق من الجلسة' });
     }
-    res.json({ success: true, message: 'تم تسجيل الخروج بنجاح' });
   });
 
-  app.post('/api/auth/change-credentials', requireAdmin, (req: Request, res: Response) => {
-    const { currentPassword, newUsername, newPassword } = req.body;
-    const currentAdmin = db.getAdminInfo();
-
-    if (!db.verifyAdmin(currentAdmin.username, currentPassword)) {
-      res.status(400).json({ error: 'كلمة المرور الحالية غير صحيحة' });
-      return;
+  app.post(authLogoutPaths, (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    try {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        db.invalidateSession(token);
+      }
+      res.json({ success: true, message: 'تم تسجيل الخروج بنجاح' });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: 'خطأ أثناء تسجيل الخروج' });
     }
+  });
 
-    if (newPassword && newPassword.length < 6) {
-      res.status(400).json({ error: 'يجب أن لا تقل كلمة المرور الجديدة عن 6 أحرف أو أرقام' });
-      return;
+  app.post(authChangeCredsPaths, requireAdmin, (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    try {
+      const { currentPassword, newUsername, newPassword } = req.body || {};
+      const currentAdmin = db.getAdminInfo();
+
+      if (!db.verifyAdmin(currentAdmin.username, currentPassword)) {
+        res.status(400).json({ success: false, error: 'كلمة المرور الحالية غير صحيحة' });
+        return;
+      }
+
+      if (newPassword && newPassword.length < 6) {
+        res.status(400).json({ success: false, error: 'يجب أن لا تقل كلمة المرور الجديدة عن 6 أحرف أو أرقام' });
+        return;
+      }
+
+      db.changeAdminCredentials(newUsername, newPassword);
+      res.json({ success: true, message: 'تم تحديث بيانات المسؤول بنجاح' });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err?.message || 'خطأ في تحديث البيانات' });
     }
-
-    db.changeAdminCredentials(newUsername, newPassword);
-    res.json({ success: true, message: 'تم تحديث بيانات المسؤول بنجاح' });
   });
 
   // --- Public Invitation Endpoints ---
@@ -685,6 +790,32 @@ async function startServer() {
       res.json({ success: true, message: 'تم استعادة النسخة الاحتياطية بنجاح' });
     } else {
       res.status(500).json({ error: 'فشل استعادة النسخة الاحتياطية' });
+    }
+  });
+
+  // --- Guaranteed JSON Catch-All for API Routes ---
+  // Ensures unmatched API requests NEVER fall into Vite/SPA HTML fallback or return HTML
+  app.all(['/api', '/api/*', '/admin/api', '/admin/api/*'], (req: Request, res: Response) => {
+    res.status(404).setHeader('Content-Type', 'application/json; charset=utf-8').json({
+      success: false,
+      error: `المسار البرمجي المطلوب غير متوفر على الخادم (${req.method} ${req.originalUrl})`
+    });
+  });
+
+  // Global Error Handler for API requests
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    if (res.headersSent) {
+      return next(err);
+    }
+    console.error('Unhandled server error:', err);
+    const isApi = req.path.startsWith('/api') || req.path.startsWith('/admin/api');
+    if (isApi) {
+      res.status(err.status || 500).setHeader('Content-Type', 'application/json; charset=utf-8').json({
+        success: false,
+        error: err.message || 'حدث خطأ داخلي في الخادم'
+      });
+    } else {
+      next(err);
     }
   });
 

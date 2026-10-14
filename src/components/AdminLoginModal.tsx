@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Lock, KeyRound, User, AlertCircle, ArrowLeft, ShieldCheck, UserPlus } from 'lucide-react';
+import { safeFetchJson } from '../utils/api';
 
 interface AdminLoginModalProps {
   isOpen: boolean;
@@ -31,13 +32,16 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       setCheckingStatus(true);
       setError('');
       try {
-        const res = await fetch('/api/auth/setup-status');
-        const data = await res.json();
+        const res = await safeFetchJson<{ isConfigured: boolean }>('/api/auth/setup-status');
         if (isMounted) {
-          setIsSetupMode(!data.isConfigured);
+          if (res.ok && res.data) {
+            setIsSetupMode(!res.data.isConfigured);
+          } else {
+            // Default to normal login mode if check encounters unexpected state
+            setIsSetupMode(false);
+          }
         }
       } catch {
-        // Fallback to normal login
         if (isMounted) setIsSetupMode(false);
       } finally {
         if (isMounted) setCheckingStatus(false);
@@ -72,7 +76,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
       setLoading(true);
       try {
-        const res = await fetch('/api/auth/setup', {
+        const res = await safeFetchJson<{ token: string; admin: any; message?: string }>('/api/auth/setup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -81,16 +85,16 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           })
         });
 
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || 'فشل إعداد حساب المسؤول');
+        if (!res.ok || !res.data) {
+          setError(res.error || 'فشل إعداد حساب المسؤول، يرجى المحاولة مرة أخرى');
+          return;
         }
 
-        localStorage.setItem('wedding_admin_token', data.token);
-        onLoginSuccess(data.token, data.admin);
+        localStorage.setItem('wedding_admin_token', res.data.token);
+        onLoginSuccess(res.data.token, res.data.admin);
         onClose();
       } catch (err: any) {
-        setError(err.message || 'خطأ في الاتصال بالخادم');
+        setError(err?.message || 'خطأ في الاتصال بالخادم');
       } finally {
         setLoading(false);
       }
@@ -103,7 +107,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
       setLoading(true);
       try {
-        const res = await fetch('/api/auth/login', {
+        const res = await safeFetchJson<{ token: string; admin: any; needsSetup?: boolean }>('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -112,19 +116,19 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           })
         });
 
-        const data = await res.json();
-        if (!res.ok) {
-          if (data.needsSetup) {
+        if (!res.ok || !res.data) {
+          if (res.data?.needsSetup) {
             setIsSetupMode(true);
           }
-          throw new Error(data.error || 'اسم المستخدم أو كلمة المرور غير صحيحة');
+          setError(res.error || 'اسم المستخدم أو كلمة المرور غير صحيحة');
+          return;
         }
 
-        localStorage.setItem('wedding_admin_token', data.token);
-        onLoginSuccess(data.token, data.admin);
+        localStorage.setItem('wedding_admin_token', res.data.token);
+        onLoginSuccess(res.data.token, res.data.admin);
         onClose();
       } catch (err: any) {
-        setError(err.message || 'خطأ في الاتصال بالخادم');
+        setError(err?.message || 'خطأ في الاتصال بالخادم');
       } finally {
         setLoading(false);
       }

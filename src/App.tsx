@@ -19,6 +19,7 @@ import { AudioPlayer } from './components/AudioPlayer';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { Eye } from 'lucide-react';
+import { safeFetchJson } from './utils/api';
 
 export default function App() {
   const [data, setData] = useState<InvitationData>(defaultInvitationData);
@@ -43,11 +44,10 @@ export default function App() {
   // Check auth on load
   const verifyAuth = async (token: string) => {
     try {
-      const res = await fetch('/api/auth/me', {
+      const res = await safeFetchJson<{ authenticated: boolean }>('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const json = await res.json();
-      if (json.authenticated) {
+      if (res.ok && res.data?.authenticated) {
         setIsAdminLoggedIn(true);
       } else {
         setIsAdminLoggedIn(false);
@@ -68,14 +68,12 @@ export default function App() {
         headers['Authorization'] = `Bearer ${adminToken}`;
       }
 
-      const res = await fetch(`/api/invitation${isPreview ? '?preview=true' : ''}`, {
-        headers
-      });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.data) {
-          setData(json.data);
-        }
+      const res = await safeFetchJson<{ data: InvitationData }>(
+        `/api/invitation${isPreview ? '?preview=true' : ''}`,
+        { headers }
+      );
+      if (res.ok && res.data?.data) {
+        setData(res.data.data);
       }
     } catch (err) {
       console.error('Failed to load invitation data, using cached defaults', err);
@@ -90,6 +88,25 @@ export default function App() {
     }
     loadInvitationData(previewMode);
   }, [adminToken, previewMode]);
+
+  // Support direct URL routing to admin login (e.g. /admin, /login, /admin/login, ?admin=true)
+  useEffect(() => {
+    const path = window.location.pathname.toLowerCase();
+    const search = window.location.search.toLowerCase();
+    const isAdminPath =
+      path.includes('/admin') ||
+      path.includes('/login') ||
+      search.includes('admin') ||
+      search.includes('login');
+
+    if (isAdminPath) {
+      if (adminToken && isAdminLoggedIn) {
+        setIsAdminDashboardOpen(true);
+      } else {
+        setIsLoginModalOpen(true);
+      }
+    }
+  }, [adminToken, isAdminLoggedIn]);
 
   // Audio handling
   useEffect(() => {
@@ -160,7 +177,7 @@ export default function App() {
   const handleLogout = async () => {
     if (adminToken) {
       try {
-        await fetch('/api/auth/logout', {
+        await safeFetchJson('/api/auth/logout', {
           method: 'POST',
           headers: { Authorization: `Bearer ${adminToken}` }
         });
