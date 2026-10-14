@@ -1,0 +1,8 @@
+{
+  "name": "Love story ",
+  "description": "حكاية حب تبدأ اليوم، وتدوم للأبد",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

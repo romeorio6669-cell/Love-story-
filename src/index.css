@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-heading: 'Amiri', serif;
+    --font-body: 'Alexandria', sans-serif;
+    --font-calligraphy: 'Aref Ruqaa', serif;
+  }
+
+  body {
+    font-family: var(--font-body);
+    direction: rtl;
+    background-color: #17120f;
+    color: #f7f2ea;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, .font-heading {
+    font-family: var(--font-heading);
+  }
+
+  .font-calligraphy {
+    font-family: var(--font-calligraphy);
+  }
+}
+
+/* Custom smooth luxury scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #17120f;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4a382e;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c89d5c;
+}
+
+/* Continuous smooth marquee track for photos */
+@keyframes continuous-photo-scroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(50%, 0, 0);
+  }
+}
+
+.photo-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: continuous-photo-scroll 38s linear infinite;
+  will-change: transform;
+}
+
+.photo-marquee-track:hover,
+.photo-marquee-track:focus-within {
+  animation-play-state: paused;
+}
+
+/* Smooth continuous chat ticker for guest wishes */
+@keyframes continuous-chat-scroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(50%, 0, 0);
+  }
+}
+
+.chat-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: continuous-chat-scroll 45s linear infinite;
+  will-change: transform;
+}
+
+.chat-marquee-track:hover,
+.chat-marquee-track:focus-within {
+  animation-play-state: paused;
+}

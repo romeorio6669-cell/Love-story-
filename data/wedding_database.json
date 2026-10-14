@@ -1,0 +1,352 @@
+{
+  "admin": {
+    "isConfigured": false,
+    "username": "",
+    "salt": "",
+    "passwordHash": "",
+    "updatedAt": "2026-10-14T13:55:03.833Z"
+  },
+  "published": {
+    "siteTitle": "دعوة زفاف رمزي وريم | ليلة العمر",
+    "groomName": "رمزي المنصور",
+    "brideName": "ريم القحطاني",
+    "groomBio": "ابن الأستاذ عبد العزيز المنصور، مهندس معماري",
+    "brideBio": "كريمة الدكتور عبد الله القحطاني، مصممة ديكور داخلي",
+    "groomImage": "/src/assets/images/wedding_groom_portrait_1791979812553.jpg",
+    "brideImage": "/src/assets/images/wedding_bride_portrait_1791979814208.jpg",
+    "openingHeadline": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
+    "openingSubheadline": "«وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُم مِّنْ أَنفُسِكُمْ أَزْوَاجًا لِّتَسْكُنُوا إِلَيْهَا وَجَعَلَ بَيْنَكُم مَّوَدَّةً وَرَحْمَةً»",
+    "openingButtonText": "افتح الدعوة واستمع إلى الموسيقى",
+    "openingBgImage": "/src/assets/images/wedding_hero_bg_1791979813300.jpg",
+    "openingBgVideo": "",
+    "weddingDate": "2026-11-20T20:00:00",
+    "weddingDateHijri": "الجمعة 11 جمادى الأولى 1448 هـ",
+    "eventStartTimeText": "الساعة 08:00 مساءً",
+    "eventEndTimeText": "الساعة 01:00 صباحاً",
+    "invitationTitle": "دعوة لحضور حفل الزفاف المبارك",
+    "invitationVerse": "«وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُم مِّنْ أَنفُسِكُمْ أَزْوَاجًا لِّتَسْكُنُوا إِلَيْهَا»",
+    "familyNamesText": "تتشرف عائلة المنصور وعائلة القحطاني بدعوتكم الكريمة",
+    "invitationMessage": "يسعدنا ويشرفنا دعوتكم لمشاركتنا فرحتنا الكبرى في هذه الليلة الاستثنائية التي تجتمع فيها القلوب وتسطر بداية فصل جديد من المحبة والوفاء. حضوركم يضفي على حفلنا ألقاً ويزيد من بهجتنا.",
+    "invitationTextAlign": "center",
+    "invitationBgStyle": "gold-border",
+    "venueName": "قصر الثريا للاحتفالات والمؤتمرات",
+    "venueCity": "الرياض",
+    "venueAddress": "طريق الملك فهد، حي الصحافة، الرياض، المملكة العربية السعودية",
+    "venueDescription": "القاعة الملكية الكبرى، مدخل خاص لكبار الشخصيات ومواقف سيارات واسعة ومريحة لجميع الضيوف.",
+    "venueMapUrl": "https://maps.google.com/?q=24.7136,46.6753",
+    "venueImage": "/src/assets/images/wedding_venue_palace_1791979814144.jpg",
+    "photos": [
+      {
+        "id": "photo-1",
+        "url": "/src/assets/images/wedding_rings_detail_1791979814393.jpg",
+        "caption": "رباط المحبة والوفاء",
+        "category": "خواتم",
+        "order": 1
+      },
+      {
+        "id": "photo-2",
+        "url": "/src/assets/images/wedding_venue_palace_1791979814144.jpg",
+        "caption": "القاعة الملكية لحفل الزفاف",
+        "category": "المكان",
+        "order": 2
+      },
+      {
+        "id": "photo-3",
+        "url": "/src/assets/images/wedding_hero_bg_1791979813300.jpg",
+        "caption": "أجواء الشموع والضيافة الفاخرة",
+        "category": "الديكور",
+        "order": 3
+      },
+      {
+        "id": "photo-4",
+        "url": "/src/assets/images/wedding_groom_portrait_1791979812553.jpg",
+        "caption": "العريس في يومه المميز",
+        "category": "العريس",
+        "order": 4
+      },
+      {
+        "id": "photo-5",
+        "url": "/src/assets/images/wedding_bride_portrait_1791979814208.jpg",
+        "caption": "إطلالة العروس الملكية",
+        "category": "العروس",
+        "order": 5
+      }
+    ],
+    "videos": [
+      {
+        "id": "video-1",
+        "url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+        "title": "لحظات استثنائية وبداية الحكاية",
+        "description": "فيديو تشويقي يعبر عن مشاعر المحبة والبهجة والاستعداد لليلة العمر",
+        "type": "main",
+        "order": 1
+      }
+    ],
+    "musicUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=romantic-wedding-piano-10657.mp3",
+    "musicTitle": "معزوفة ليلة العمر الرومانسية",
+    "musicEnabled": true,
+    "musicVolume": 0.75,
+    "musicAutoLoop": true,
+    "musicIconStyle": "disc",
+    "timelineEnabled": true,
+    "timeline": [
+      {
+        "id": "tl-1",
+        "time": "08:00 م",
+        "title": "استقبال الضيوف الكرام",
+        "description": "الترحيب بالضيوف وتقديم القهوة العربية الأصيلة والحلويات الفاخرة",
+        "order": 1
+      },
+      {
+        "id": "tl-2",
+        "time": "09:30 م",
+        "title": "زفة العروسين المباركة",
+        "description": "دخول العروسين واستقبالهما بأجمل الأهازيج والتهاني",
+        "order": 2
+      },
+      {
+        "id": "tl-3",
+        "time": "10:30 م",
+        "title": "مأدبة العشاء الملكية",
+        "description": "تناول طعام العشاء مع أطيب التمنيات للعروسين بحياة سعيدة",
+        "order": 3
+      },
+      {
+        "id": "tl-4",
+        "time": "12:00 ص",
+        "title": "تقطيع قالب الحلوى وتوديع الضيوف",
+        "description": "التقاط الصور التذكارية وتوديع الضيوف بالمسك والعود",
+        "order": 4
+      }
+    ],
+    "customSections": [
+      {
+        "id": "custom-1",
+        "title": "عبارات الشكر والامتنان",
+        "subtitle": "كلمة من أعماق القلب",
+        "content": "نعجز عن شكر كل من شاركنا هذه الفرحة أو تكبد عناء الحضور، نسأل الله أن يبارك في أيامكم وأن يديم بيننا أواصر المحبة ودوام المسرات والأفراح.",
+        "order": 1,
+        "isVisible": true
+      },
+      {
+        "id": "custom-2",
+        "title": "إرشادات خاصة بالضيوف الأعزاء",
+        "subtitle": "نرجو التكرم بالاطلاع",
+        "content": "نرجو من الحضور الكرام الالتزام بخصوصية الحفل وعدم التصوير بالهواتف داخل قاعة النساء، شاكرين لكم تفهمكم وحسن تعاونكم.",
+        "order": 2,
+        "isVisible": true
+      }
+    ],
+    "rsvpEnabled": true,
+    "rsvpDeadlineText": "يرجى تأكيد الحضور قبل تاريخ 10 نوفمبر 2026",
+    "rsvpAllowCompanions": true,
+    "rsvpMaxCompanions": 5,
+    "rsvpNotes": "يسعدنا جداً حضوركم وتشريفكم لنا، حضوركم شرف لا يكتمل العرس بدونه.",
+    "primaryColor": "#c89d5c",
+    "bgColor": "#17120f",
+    "cardBgColor": "#231b17",
+    "textColor": "#f7f2ea",
+    "accentColor": "#d8ad6e",
+    "fontFamily": "amiri",
+    "sectionsOrder": [
+      "hero",
+      "couple",
+      "invitation",
+      "countdown",
+      "venue",
+      "timeline",
+      "photos",
+      "videos",
+      "custom",
+      "rsvp"
+    ],
+    "hiddenSections": []
+  },
+  "draft": {
+    "siteTitle": "دعوة زفاف رمزي وريم | ليلة العمر",
+    "groomName": "رمزي المنصور",
+    "brideName": "ريم القحطاني",
+    "groomBio": "ابن الأستاذ عبد العزيز المنصور، مهندس معماري",
+    "brideBio": "كريمة الدكتور عبد الله القحطاني، مصممة ديكور داخلي",
+    "groomImage": "/src/assets/images/wedding_groom_portrait_1791979812553.jpg",
+    "brideImage": "/src/assets/images/wedding_bride_portrait_1791979814208.jpg",
+    "openingHeadline": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
+    "openingSubheadline": "«وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُم مِّنْ أَنفُسِكُمْ أَزْوَاجًا لِّتَسْكُنُوا إِلَيْهَا وَجَعَلَ بَيْنَكُم مَّوَدَّةً وَرَحْمَةً»",
+    "openingButtonText": "افتح الدعوة واستمع إلى الموسيقى",
+    "openingBgImage": "/src/assets/images/wedding_hero_bg_1791979813300.jpg",
+    "openingBgVideo": "",
+    "weddingDate": "2026-11-20T20:00:00",
+    "weddingDateHijri": "الجمعة 11 جمادى الأولى 1448 هـ",
+    "eventStartTimeText": "الساعة 08:00 مساءً",
+    "eventEndTimeText": "الساعة 01:00 صباحاً",
+    "invitationTitle": "دعوة لحضور حفل الزفاف المبارك",
+    "invitationVerse": "«وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُم مِّنْ أَنفُسِكُمْ أَزْوَاجًا لِّتَسْكُنُوا إِلَيْهَا»",
+    "familyNamesText": "تتشرف عائلة المنصور وعائلة القحطاني بدعوتكم الكريمة",
+    "invitationMessage": "يسعدنا ويشرفنا دعوتكم لمشاركتنا فرحتنا الكبرى في هذه الليلة الاستثنائية التي تجتمع فيها القلوب وتسطر بداية فصل جديد من المحبة والوفاء. حضوركم يضفي على حفلنا ألقاً ويزيد من بهجتنا.",
+    "invitationTextAlign": "center",
+    "invitationBgStyle": "gold-border",
+    "venueName": "قصر الثريا للاحتفالات والمؤتمرات",
+    "venueCity": "الرياض",
+    "venueAddress": "طريق الملك فهد، حي الصحافة، الرياض، المملكة العربية السعودية",
+    "venueDescription": "القاعة الملكية الكبرى، مدخل خاص لكبار الشخصيات ومواقف سيارات واسعة ومريحة لجميع الضيوف.",
+    "venueMapUrl": "https://maps.google.com/?q=24.7136,46.6753",
+    "venueImage": "/src/assets/images/wedding_venue_palace_1791979814144.jpg",
+    "photos": [
+      {
+        "id": "photo-1",
+        "url": "/src/assets/images/wedding_rings_detail_1791979814393.jpg",
+        "caption": "رباط المحبة والوفاء",
+        "category": "خواتم",
+        "order": 1
+      },
+      {
+        "id": "photo-2",
+        "url": "/src/assets/images/wedding_venue_palace_1791979814144.jpg",
+        "caption": "القاعة الملكية لحفل الزفاف",
+        "category": "المكان",
+        "order": 2
+      },
+      {
+        "id": "photo-3",
+        "url": "/src/assets/images/wedding_hero_bg_1791979813300.jpg",
+        "caption": "أجواء الشموع والضيافة الفاخرة",
+        "category": "الديكور",
+        "order": 3
+      },
+      {
+        "id": "photo-4",
+        "url": "/src/assets/images/wedding_groom_portrait_1791979812553.jpg",
+        "caption": "العريس في يومه المميز",
+        "category": "العريس",
+        "order": 4
+      },
+      {
+        "id": "photo-5",
+        "url": "/src/assets/images/wedding_bride_portrait_1791979814208.jpg",
+        "caption": "إطلالة العروس الملكية",
+        "category": "العروس",
+        "order": 5
+      }
+    ],
+    "videos": [
+      {
+        "id": "video-1",
+        "url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+        "title": "لحظات استثنائية وبداية الحكاية",
+        "description": "فيديو تشويقي يعبر عن مشاعر المحبة والبهجة والاستعداد لليلة العمر",
+        "type": "main",
+        "order": 1
+      }
+    ],
+    "musicUrl": "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=romantic-wedding-piano-10657.mp3",
+    "musicTitle": "معزوفة ليلة العمر الرومانسية",
+    "musicEnabled": true,
+    "musicVolume": 0.75,
+    "musicAutoLoop": true,
+    "musicIconStyle": "disc",
+    "timelineEnabled": true,
+    "timeline": [
+      {
+        "id": "tl-1",
+        "time": "08:00 م",
+        "title": "استقبال الضيوف الكرام",
+        "description": "الترحيب بالضيوف وتقديم القهوة العربية الأصيلة والحلويات الفاخرة",
+        "order": 1
+      },
+      {
+        "id": "tl-2",
+        "time": "09:30 م",
+        "title": "زفة العروسين المباركة",
+        "description": "دخول العروسين واستقبالهما بأجمل الأهازيج والتهاني",
+        "order": 2
+      },
+      {
+        "id": "tl-3",
+        "time": "10:30 م",
+        "title": "مأدبة العشاء الملكية",
+        "description": "تناول طعام العشاء مع أطيب التمنيات للعروسين بحياة سعيدة",
+        "order": 3
+      },
+      {
+        "id": "tl-4",
+        "time": "12:00 ص",
+        "title": "تقطيع قالب الحلوى وتوديع الضيوف",
+        "description": "التقاط الصور التذكارية وتوديع الضيوف بالمسك والعود",
+        "order": 4
+      }
+    ],
+    "customSections": [
+      {
+        "id": "custom-1",
+        "title": "عبارات الشكر والامتنان",
+        "subtitle": "كلمة من أعماق القلب",
+        "content": "نعجز عن شكر كل من شاركنا هذه الفرحة أو تكبد عناء الحضور، نسأل الله أن يبارك في أيامكم وأن يديم بيننا أواصر المحبة ودوام المسرات والأفراح.",
+        "order": 1,
+        "isVisible": true
+      },
+      {
+        "id": "custom-2",
+        "title": "إرشادات خاصة بالضيوف الأعزاء",
+        "subtitle": "نرجو التكرم بالاطلاع",
+        "content": "نرجو من الحضور الكرام الالتزام بخصوصية الحفل وعدم التصوير بالهواتف داخل قاعة النساء، شاكرين لكم تفهمكم وحسن تعاونكم.",
+        "order": 2,
+        "isVisible": true
+      }
+    ],
+    "rsvpEnabled": true,
+    "rsvpDeadlineText": "يرجى تأكيد الحضور قبل تاريخ 10 نوفمبر 2026",
+    "rsvpAllowCompanions": true,
+    "rsvpMaxCompanions": 5,
+    "rsvpNotes": "يسعدنا جداً حضوركم وتشريفكم لنا، حضوركم شرف لا يكتمل العرس بدونه.",
+    "primaryColor": "#c89d5c",
+    "bgColor": "#17120f",
+    "cardBgColor": "#231b17",
+    "textColor": "#f7f2ea",
+    "accentColor": "#d8ad6e",
+    "fontFamily": "amiri",
+    "sectionsOrder": [
+      "hero",
+      "couple",
+      "invitation",
+      "countdown",
+      "venue",
+      "timeline",
+      "photos",
+      "videos",
+      "custom",
+      "rsvp"
+    ],
+    "hiddenSections": []
+  },
+  "rsvps": [
+    {
+      "guestName": "أحمد الزهراني",
+      "status": "attending",
+      "companionCount": 1,
+      "message": "مبارك للعروسين",
+      "phone": "+966555123456",
+      "id": "rsvp-1791980701774-3cdn6",
+      "createdAt": "2026-10-14T12:25:01.774Z",
+      "isVisibleInChat": true
+    },
+    {
+      "id": "rsvp-demo-1",
+      "guestName": "سلطان القحطاني",
+      "status": "attending",
+      "companionCount": 2,
+      "message": "ألف ألف مبروك للعروسين، بارك الله لكما وجمع بينكما في خير.",
+      "phone": "+966500000000",
+      "createdAt": "2026-10-13T12:24:45.944Z"
+    },
+    {
+      "id": "rsvp-demo-2",
+      "guestName": "د. خالد المنصور",
+      "status": "attending",
+      "companionCount": 1,
+      "message": "تهانينا القلبية، نسأل الله لكما حياة سعيدة وموفقة.",
+      "phone": "+966511111111",
+      "createdAt": "2026-10-14T00:24:45.944Z"
+    }
+  ],
+  "sessions": {}
+}
