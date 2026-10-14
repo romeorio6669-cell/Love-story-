@@ -40,6 +40,7 @@ import {
   RsvpResponse
 } from '../../types/invitation';
 import { safeFetchJson } from '../../utils/api';
+import { defaultInvitationData } from '../../data/initialData';
 
 interface AdminDashboardProps {
   token: string;
@@ -71,6 +72,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -108,6 +110,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Fetch draft & published data
   const fetchData = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const res = await safeFetchJson<{ draft: InvitationData; published: InvitationData }>(
         '/api/invitation/draft',
@@ -117,14 +120,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         onLogout();
         return;
       }
-      if (res.ok && res.data) {
-        setDraft(res.data.draft);
-        setPublished(res.data.published);
+      if (res.ok && res.data?.draft) {
+        const cleanDraft: InvitationData = {
+          ...defaultInvitationData,
+          ...res.data.draft,
+          photos: Array.isArray(res.data.draft.photos) ? res.data.draft.photos : defaultInvitationData.photos,
+          videos: Array.isArray(res.data.draft.videos) ? res.data.draft.videos : defaultInvitationData.videos,
+          timeline: Array.isArray(res.data.draft.timeline) ? res.data.draft.timeline : defaultInvitationData.timeline,
+          customSections: Array.isArray(res.data.draft.customSections) ? res.data.draft.customSections : defaultInvitationData.customSections,
+          sectionsOrder: Array.isArray(res.data.draft.sectionsOrder) && res.data.draft.sectionsOrder.length > 0
+            ? res.data.draft.sectionsOrder
+            : defaultInvitationData.sectionsOrder,
+          hiddenSections: Array.isArray(res.data.draft.hiddenSections) ? res.data.draft.hiddenSections : []
+        };
+        const cleanPublished: InvitationData = res.data.published ? {
+          ...defaultInvitationData,
+          ...res.data.published,
+          photos: Array.isArray(res.data.published.photos) ? res.data.published.photos : cleanDraft.photos,
+          videos: Array.isArray(res.data.published.videos) ? res.data.published.videos : cleanDraft.videos,
+          timeline: Array.isArray(res.data.published.timeline) ? res.data.published.timeline : cleanDraft.timeline,
+          customSections: Array.isArray(res.data.published.customSections) ? res.data.published.customSections : cleanDraft.customSections,
+          sectionsOrder: Array.isArray(res.data.published.sectionsOrder) && res.data.published.sectionsOrder.length > 0
+            ? res.data.published.sectionsOrder
+            : cleanDraft.sectionsOrder,
+          hiddenSections: Array.isArray(res.data.published.hiddenSections) ? res.data.published.hiddenSections : []
+        } : cleanDraft;
+
+        setDraft(cleanDraft);
+        setPublished(cleanPublished);
+        setLoadError(null);
       } else {
-        showNotice('error', res.error || 'تعذر جلب بيانات لوحة التحكم من الخادم');
+        const msg = res.error || 'تعذر جلب بيانات لوحة التحكم من الخادم';
+        setLoadError(msg);
+        showNotice('error', msg);
       }
-    } catch {
-      showNotice('error', 'تعذر جلب بيانات لوحة التحكم من الخادم');
+    } catch (err: any) {
+      const msg = err?.message || 'تعذر جلب بيانات لوحة التحكم من الخادم';
+      setLoadError(msg);
+      showNotice('error', msg);
     } finally {
       setLoading(false);
     }
@@ -301,6 +334,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setDraft({ ...draft, [key]: value });
   };
 
+  // Safe Arabic date formatter
+  const formatSafeDate = (isoStr?: string) => {
+    if (!isoStr) return '-';
+    try {
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return '-';
+      return d.toLocaleDateString('ar-SA');
+    } catch {
+      return '-';
+    }
+  };
+
   // RSVP actions
   const handleDeleteRsvp = async (id: string) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الرد؟')) return;
@@ -394,23 +439,97 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     reader.readAsText(file);
   };
 
-  if (loading || !draft) {
+  if (loading && !draft) {
     return (
-      <div className="fixed inset-0 z-50 bg-[#17120f] flex items-center justify-center p-4">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-3 border-[#c89d5c] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-[#fbf7f0] font-heading text-lg">جاري تحميل لوحة التحكم...</p>
+      <div className="fixed inset-0 z-[100] bg-[#140e0b] flex flex-col items-center justify-center p-4">
+        <div className="absolute top-5 left-5">
+          <button
+            onClick={onClose}
+            className="p-2.5 rounded-full bg-[#231b17] border border-[#4a382e] text-[#8c7b70] hover:text-[#fbf7f0] hover:border-[#c89d5c] transition-colors cursor-pointer"
+            title="الرجوع إلى الموقع"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="text-center space-y-4 max-w-sm bg-[#231b17] border border-[#c89d5c]/40 rounded-3xl p-8 shadow-2xl">
+          <div className="w-12 h-12 border-4 border-[#c89d5c] border-t-transparent rounded-full animate-spin mx-auto shadow-lg shadow-[#c89d5c]/20" />
+          <p className="text-[#fbf7f0] font-heading text-lg font-bold">لوحة تحكم دعوة الزفاف</p>
+          <p className="text-xs text-[#8c7b70]">جاري مزامنة الإعدادات واسترجاع مسودة التعديلات...</p>
+          <div className="pt-2">
+            <button
+              onClick={onClose}
+              className="text-xs text-[#8c7b70] hover:text-[#c89d5c] transition-colors cursor-pointer"
+            >
+              الرجوع إلى الموقع
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Filtered RSVPs
-  const filteredRsvps = rsvps.filter((r) => {
+  if (!draft) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-[#140e0b] flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md bg-[#231b17] border border-[#c89d5c]/50 rounded-3xl p-8 shadow-2xl text-center space-y-6">
+          <div className="w-16 h-16 rounded-full bg-amber-950/60 border border-amber-700/60 text-amber-400 flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-heading font-bold text-[#fbf7f0]">
+              تعذر استرجاع مسودة الدعوة
+            </h3>
+            <p className="text-xs text-[#b09e90] leading-relaxed">
+              {loadError || 'حدث خطأ أثناء تحميل بيانات لوحة التحكم من الخادم.'}
+            </p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => fetchData()}
+              className="w-full py-3 rounded-xl bg-[#c89d5c] hover:bg-[#d8ad6e] text-[#140e0b] font-bold text-xs transition-all shadow-md cursor-pointer"
+            >
+              إعادة محاولة التحميل
+            </button>
+            <button
+              onClick={() => {
+                setDraft(defaultInvitationData);
+                setPublished(defaultInvitationData);
+              }}
+              className="w-full py-3 rounded-xl bg-[#3d2e24] hover:bg-[#4a382e] text-[#fbf7f0] font-semibold text-xs transition-all border border-[#c89d5c]/30 cursor-pointer"
+            >
+              المتابعة بالقالب الافتراضي
+            </button>
+            <div className="flex items-center justify-between pt-2">
+              <button
+                onClick={onClose}
+                className="text-xs text-[#8c7b70] hover:text-[#fbf7f0] transition-colors cursor-pointer"
+              >
+                الرجوع إلى الموقع
+              </button>
+              <button
+                onClick={onLogout}
+                className="text-xs text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+              >
+                تسجيل الخروج
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Filtered RSVPs safely guarded against null/undefined
+  const filteredRsvps = (rsvps || []).filter((r) => {
+    if (!r) return false;
+    const guestName = r.guestName || '';
+    const phone = r.phone || '';
+    const message = r.message || '';
+    const query = (rsvpSearch || '').toLowerCase();
     const matchesSearch =
-      r.guestName.toLowerCase().includes(rsvpSearch.toLowerCase()) ||
-      (r.phone && r.phone.includes(rsvpSearch)) ||
-      (r.message && r.message.toLowerCase().includes(rsvpSearch.toLowerCase()));
+      guestName.toLowerCase().includes(query) ||
+      phone.includes(query) ||
+      message.toLowerCase().includes(query);
     if (!matchesSearch) return false;
     if (rsvpFilter === 'attending') return r.status === 'attending';
     if (rsvpFilter === 'apologizing') return r.status === 'apologizing';
@@ -418,7 +537,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#17120f] text-[#f7f2ea] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-[100] bg-[#17120f] text-[#f7f2ea] flex flex-col overflow-hidden">
       {/* Top Header & Actions Bar */}
       <header className="h-16 bg-[#231b17] border-b border-[#4a382e] px-4 sm:px-6 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
@@ -504,10 +623,131 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
+      {/* Mobile Horizontal Tabs Navigation */}
+      <div className="md:hidden bg-[#1c1512] border-b border-[#4a382e] px-2 py-2 overflow-x-auto flex items-center gap-1.5 shrink-0">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap cursor-pointer transition-colors ${
+            activeTab === 'overview' ? 'bg-[#c89d5c] text-[#140e0b] font-bold' : 'text-[#d8cfc4] bg-[#231b17]'
+          }`}
+        >
+          <Sliders className="w-3.5 h-3.5" />
+          <span>نظرة عامة</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('general')}
+          className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap cursor-pointer transition-colors ${
+            activeTab === 'general' ? 'bg-[#c89d5c] text-[#140e0b] font-bold' : 'text-[#d8cfc4] bg-[#231b17]'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>العروسان</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('message')}
+          className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap cursor-pointer transition-colors ${
+            activeTab === 'message' ? 'bg-[#c89d5c] text-[#140e0b] font-bold' : 'text-[#d8cfc4] bg-[#231b17]'
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>الدعوة</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('venue')}
+          className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap cursor-pointer transition-colors ${
+            activeTab === 'venue' ? 'bg-[#c89d5c] text-[#140e0b] font-bold' : 'text-[#d8cfc4] bg-[#231b17]'
+          }`}
+        >
+          <MapPin className="w-3.5 h-3.5" />
+          <span>المكان</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('photos')}
+          className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap cursor-pointer transition-colors ${
+            activeTab === 'photos' ? 'bg-[#c89d5c] text-[#140e0b] font-bold' : 'text-[#d8cfc4] bg-[#231b17]'
+          }`}
+        >
+          <ImageIcon className="w-3.5 h-3.5" />
+          <span>الصور</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('videos')}
+          className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap cursor-pointer transition-colors ${
+            activeTab === 'videos' ? 'bg-[#c89d5c] text-[#140e0b] font-bold' : 'text-[#d8cfc4] bg-[#231b17]'
+          }`}
+        >
+          <VideoIcon className="w-3.5 h-3.5" />
+          <span>الفيديو</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('music')}
+          className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap cursor-pointer transition-colors ${
+            activeTab === 'music' ? 'bg-[#c89d5c] text-[#140e0b] font-bold' : 'text-[#d8cfc4] bg-[#231b17]'
+          }`}
+        >
+          <Music className="w-3.5 h-3.5" />
+          <span>الموسيقى</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('timeline')}
+          className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap cursor-pointer transition-colors ${
+            activeTab === 'timeline' ? 'bg-[#c89d5c] text-[#140e0b] font-bold' : 'text-[#d8cfc4] bg-[#231b17]'
+          }`}
+        >
+          <Calendar className="w-3.5 h-3.5" />
+          <span>المواعيد</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('custom')}
+          className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap cursor-pointer transition-colors ${
+            activeTab === 'custom' ? 'bg-[#c89d5c] text-[#140e0b] font-bold' : 'text-[#d8cfc4] bg-[#231b17]'
+          }`}
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>مخصص</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('sections')}
+          className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap cursor-pointer transition-colors ${
+            activeTab === 'sections' ? 'bg-[#c89d5c] text-[#140e0b] font-bold' : 'text-[#d8cfc4] bg-[#231b17]'
+          }`}
+        >
+          <MoveUp className="w-3.5 h-3.5" />
+          <span>الترتيب</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('design')}
+          className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap cursor-pointer transition-colors ${
+            activeTab === 'design' ? 'bg-[#c89d5c] text-[#140e0b] font-bold' : 'text-[#d8cfc4] bg-[#231b17]'
+          }`}
+        >
+          <Sliders className="w-3.5 h-3.5" />
+          <span>المظهر</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('rsvp')}
+          className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap cursor-pointer transition-colors ${
+            activeTab === 'rsvp' ? 'bg-[#c89d5c] text-[#140e0b] font-bold' : 'text-[#d8cfc4] bg-[#231b17]'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>الردود ({rsvps?.length || 0})</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('security')}
+          className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap cursor-pointer transition-colors ${
+            activeTab === 'security' ? 'bg-[#c89d5c] text-[#140e0b] font-bold' : 'text-[#d8cfc4] bg-[#231b17]'
+          }`}
+        >
+          <Shield className="w-3.5 h-3.5" />
+          <span>الأمان</span>
+        </button>
+      </div>
+
       {/* Main Body: Sidebar + Tab Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar Tabs */}
-        <aside className="w-64 bg-[#1f1713] border-l border-[#4a382e] flex flex-col overflow-y-auto shrink-0">
+        {/* Sidebar Tabs (Desktop / Tablet) */}
+        <aside className="hidden md:flex w-64 bg-[#1f1713] border-l border-[#4a382e] flex-col overflow-y-auto shrink-0">
           <div className="p-3 space-y-1">
             <button
               onClick={() => setActiveTab('overview')}

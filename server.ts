@@ -13,6 +13,7 @@ const __dirname = path.dirname(__filename);
 const PORT = 3000;
 const DATA_DIR = path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'wedding_database.json');
+const BACKUP_FILE = path.join(DATA_DIR, 'wedding_database.backup.json');
 
 // Interface for persisted database
 interface DatabaseSchema {
@@ -39,7 +40,29 @@ function generateSalt(): string {
   return crypto.randomBytes(16).toString('hex');
 }
 
-// Initialize and manage database
+// Deep clone utility
+function deepClone<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+// Ensure full invitation data structure integrity
+function sanitizeInvitationData(data: Partial<InvitationData> | undefined): InvitationData {
+  const merged: InvitationData = {
+    ...defaultInvitationData,
+    ...(data || {})
+  };
+  merged.photos = Array.isArray(data?.photos) ? deepClone(data!.photos) : deepClone(defaultInvitationData.photos);
+  merged.videos = Array.isArray(data?.videos) ? deepClone(data!.videos) : deepClone(defaultInvitationData.videos);
+  merged.timeline = Array.isArray(data?.timeline) ? deepClone(data!.timeline) : deepClone(defaultInvitationData.timeline);
+  merged.customSections = Array.isArray(data?.customSections) ? deepClone(data!.customSections) : deepClone(defaultInvitationData.customSections);
+  merged.sectionsOrder = Array.isArray(data?.sectionsOrder) && data!.sectionsOrder.length > 0
+    ? deepClone(data!.sectionsOrder)
+    : deepClone(defaultInvitationData.sectionsOrder);
+  merged.hiddenSections = Array.isArray(data?.hiddenSections) ? deepClone(data!.hiddenSections) : [];
+  return merged;
+}
+
+// Initialize and manage database with dual-write backup and persistent cross-device storage
 class DatabaseManager {
   private data: DatabaseSchema;
 
@@ -48,33 +71,68 @@ class DatabaseManager {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
 
+    let loaded = false;
+
+    // 1. Try reading primary database file
     if (fs.existsSync(DB_FILE)) {
       try {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
-        this.data = JSON.parse(raw);
-        // Ensure structure matches
-        if (!this.data.published) this.data.published = { ...defaultInvitationData };
-        if (!this.data.draft) this.data.draft = { ...this.data.published };
-        if (!this.data.rsvps) this.data.rsvps = [];
-        if (!this.data.sessions) this.data.sessions = {};
-        if (!this.data.admin) {
-          this.data.admin = {
-            isConfigured: false,
-            username: '',
-            salt: '',
-            passwordHash: '',
-            updatedAt: new Date().toISOString()
-          };
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          this.data = this.normalizeLoadedData(parsed);
+          loaded = true;
         }
       } catch (err) {
-        console.error('Failed to parse database, re-initializing with defaults', err);
-        this.data = this.createInitialData();
-        this.save();
+        console.error('Primary database file corrupted, trying backup file...', err);
       }
-    } else {
+    }
+
+    // 2. Fallback to mirror backup file if primary failed or does not exist
+    if (!loaded && fs.existsSync(BACKUP_FILE)) {
+      try {
+        const rawBackup = fs.readFileSync(BACKUP_FILE, 'utf-8');
+        const parsedBackup = JSON.parse(rawBackup);
+        if (parsedBackup && typeof parsedBackup === 'object') {
+          this.data = this.normalizeLoadedData(parsedBackup);
+          loaded = true;
+          console.log('Successfully recovered database from mirror backup!');
+          this.save();
+        }
+      } catch (backupErr) {
+        console.error('Mirror backup also corrupted:', backupErr);
+      }
+    }
+
+    // 3. Fallback to initial default data only if neither file exists
+    if (!loaded) {
+      console.log('No existing database found. Initializing new persistent store.');
       this.data = this.createInitialData();
       this.save();
     }
+  }
+
+  private normalizeLoadedData(parsed: any): DatabaseSchema {
+    const published = sanitizeInvitationData(parsed.published);
+    const draft = sanitizeInvitationData(parsed.draft || parsed.published);
+    const rsvps = Array.isArray(parsed.rsvps) ? parsed.rsvps : [];
+    const sessions = parsed.sessions && typeof parsed.sessions === 'object' ? parsed.sessions : {};
+    const admin = parsed.admin && typeof parsed.admin === 'object'
+      ? {
+          isConfigured: !!parsed.admin.isConfigured,
+          username: parsed.admin.username || '',
+          salt: parsed.admin.salt || '',
+          passwordHash: parsed.admin.passwordHash || '',
+          updatedAt: parsed.admin.updatedAt || new Date().toISOString()
+        }
+      : {
+          isConfigured: false,
+          username: '',
+          salt: '',
+          passwordHash: '',
+          updatedAt: new Date().toISOString()
+        };
+
+    return { admin, published, draft, rsvps, sessions };
   }
 
   private createInitialData(): DatabaseSchema {
@@ -86,8 +144,8 @@ class DatabaseManager {
         passwordHash: '',
         updatedAt: new Date().toISOString()
       },
-      published: { ...defaultInvitationData },
-      draft: { ...defaultInvitationData },
+      published: sanitizeInvitationData(defaultInvitationData),
+      draft: sanitizeInvitationData(defaultInvitationData),
       rsvps: [
         {
           id: 'rsvp-demo-1',
@@ -125,9 +183,17 @@ class DatabaseManager {
   }
 
   public save(): void {
-    const tmp = `${DB_FILE}.tmp`;
-    fs.writeFileSync(tmp, JSON.stringify(this.data, null, 2), 'utf-8');
-    fs.renameSync(tmp, DB_FILE);
+    try {
+      const payload = JSON.stringify(this.data, null, 2);
+      const tmp = `${DB_FILE}.tmp`;
+      fs.writeFileSync(tmp, payload, 'utf-8');
+      fs.renameSync(tmp, DB_FILE);
+
+      // Mirror write to persistent backup file
+      fs.writeFileSync(BACKUP_FILE, payload, 'utf-8');
+    } catch (err) {
+      console.error('Failed to write database file:', err);
+    }
   }
 
   public isConfigured(): boolean {
@@ -148,28 +214,28 @@ class DatabaseManager {
   }
 
   public getPublished(): InvitationData {
-    return this.data.published;
+    return deepClone(this.data.published);
   }
 
   public getDraft(): InvitationData {
-    return this.data.draft;
+    return deepClone(this.data.draft);
   }
 
   public updateDraft(draft: InvitationData): void {
-    this.data.draft = draft;
+    this.data.draft = sanitizeInvitationData(draft);
     this.save();
   }
 
   public publishDraft(): InvitationData {
-    this.data.published = { ...this.data.draft };
+    this.data.published = sanitizeInvitationData(this.data.draft);
     this.save();
-    return this.data.published;
+    return deepClone(this.data.published);
   }
 
   public discardDraft(): InvitationData {
-    this.data.draft = { ...this.data.published };
+    this.data.draft = sanitizeInvitationData(this.data.published);
     this.save();
-    return this.data.draft;
+    return deepClone(this.data.draft);
   }
 
   public verifyAdmin(username: string, passwordAttempt: string): boolean {
@@ -315,14 +381,29 @@ async function startServer() {
   const app = express();
   app.use(express.json({ limit: '15mb' }));
 
-  // Helper auth middleware
+  // Anti-cache middleware for all API routes to ensure real-time multi-device sync
+  app.use(['/api', '/api/*', '/admin/api', '/admin/api/*'], (_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+    next();
+  });
+
+  // Helper auth middleware with Bearer header & query token fallback (for browser downloads)
   const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    let token = '';
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (typeof req.query.token === 'string') {
+      token = req.query.token;
+    }
+
+    if (!token) {
       res.status(401).json({ error: 'غير مصرح: يجب تسجيل الدخول كمسؤول للقيام بهذه العملية' });
       return;
     }
-    const token = authHeader.split(' ')[1];
     if (!db.validateSession(token)) {
       res.status(401).json({ error: 'انتهت صلاحية الجلسة، يرجى إعادة تسجيل الدخول' });
       return;

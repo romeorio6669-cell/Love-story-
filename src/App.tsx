@@ -38,11 +38,15 @@ export default function App() {
     return localStorage.getItem('wedding_admin_token');
   });
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(() => {
+    return !!localStorage.getItem('wedding_admin_token');
+  });
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
 
   // Check auth on load
   const verifyAuth = async (token: string) => {
+    setIsCheckingAuth(true);
     try {
       const res = await safeFetchJson<{ authenticated: boolean }>('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
@@ -56,10 +60,12 @@ export default function App() {
       }
     } catch {
       setIsAdminLoggedIn(false);
+    } finally {
+      setIsCheckingAuth(false);
     }
   };
 
-  // Fetch invitation data from database
+  // Fetch invitation data from database with guaranteed fresh headers
   const loadInvitationData = async (isPreview = false) => {
     setLoading(true);
     try {
@@ -85,9 +91,34 @@ export default function App() {
   useEffect(() => {
     if (adminToken) {
       verifyAuth(adminToken);
+    } else {
+      setIsCheckingAuth(false);
     }
     loadInvitationData(previewMode);
   }, [adminToken, previewMode]);
+
+  // Cross-device sync: refresh automatically when window regains focus or tab becomes active
+  useEffect(() => {
+    const handleSync = () => {
+      if (document.visibilityState === 'visible') {
+        loadInvitationData(previewMode);
+      }
+    };
+    window.addEventListener('visibilitychange', handleSync);
+    window.addEventListener('focus', handleSync);
+
+    const interval = setInterval(() => {
+      if (!isAdminDashboardOpen) {
+        loadInvitationData(previewMode);
+      }
+    }, 45000);
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleSync);
+      window.removeEventListener('focus', handleSync);
+      clearInterval(interval);
+    };
+  }, [previewMode, isAdminDashboardOpen, adminToken]);
 
   // Support direct URL routing to admin login (e.g. /admin, /login, /admin/login, ?admin=true)
   useEffect(() => {
@@ -100,13 +131,18 @@ export default function App() {
       search.includes('login');
 
     if (isAdminPath) {
+      if (isCheckingAuth) {
+        return; // Wait for initial session verification to complete
+      }
       if (adminToken && isAdminLoggedIn) {
+        setHasOpenedInvitation(true);
         setIsAdminDashboardOpen(true);
+        setIsLoginModalOpen(false);
       } else {
         setIsLoginModalOpen(true);
       }
     }
-  }, [adminToken, isAdminLoggedIn]);
+  }, [adminToken, isAdminLoggedIn, isCheckingAuth]);
 
   // Audio handling
   useEffect(() => {
@@ -169,8 +205,11 @@ export default function App() {
   };
 
   const handleLoginSuccess = (token: string) => {
+    localStorage.setItem('wedding_admin_token', token);
     setAdminToken(token);
     setIsAdminLoggedIn(true);
+    setIsLoginModalOpen(false);
+    setHasOpenedInvitation(true);
     setIsAdminDashboardOpen(true);
   };
 
@@ -189,6 +228,7 @@ export default function App() {
     setAdminToken(null);
     setIsAdminLoggedIn(false);
     setIsAdminDashboardOpen(false);
+    setIsLoginModalOpen(false);
     setPreviewMode(false);
     loadInvitationData(false);
   };
@@ -212,8 +252,12 @@ export default function App() {
 
   if (loading && !data) {
     return (
-      <div className="min-h-screen bg-[#17120f] flex items-center justify-center p-4">
-        <div className="w-12 h-12 border-3 border-[#c89d5c] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#140e0b] text-[#f7f2ea] flex flex-col items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-sm bg-[#231b17] border border-[#c89d5c]/30 rounded-3xl p-8 shadow-2xl">
+          <div className="w-12 h-12 border-4 border-[#c89d5c] border-t-transparent rounded-full animate-spin mx-auto shadow-lg shadow-[#c89d5c]/20" />
+          <h2 className="text-[#fbf7f0] font-heading text-lg font-bold">دعوة زفاف فاخرة</h2>
+          <p className="text-xs text-[#c89d5c]">جاري تحميل تفاصيل ليلة العمر...</p>
+        </div>
       </div>
     );
   }
@@ -401,7 +445,8 @@ export default function App() {
         groomName={data.groomName}
         brideName={data.brideName}
         onOpenAdmin={() => {
-          if (isAdminLoggedIn) {
+          if (isAdminLoggedIn && adminToken) {
+            setHasOpenedInvitation(true);
             setIsAdminDashboardOpen(true);
           } else {
             setIsLoginModalOpen(true);

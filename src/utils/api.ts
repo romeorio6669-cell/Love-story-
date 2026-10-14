@@ -18,9 +18,12 @@ export async function safeFetchJson<T = any>(
 ): Promise<ApiResponse<T>> {
   try {
     const res = await fetch(input, {
+      cache: 'no-store',
       ...init,
       headers: {
         Accept: 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
         ...(init?.headers || {})
       }
     });
